@@ -49,26 +49,26 @@ RSpec.describe LazyProxy do
 
   describe '.new' do
     it 'allows to set a dependency' do
-      dep = 'potato'
+      dep = 'object'
       wrapper = subject.new(dep)
       expect(wrapper.__getobj__).to be dep
     end
 
     it 'allows to set a dependency as a block' do
-      dep = 'potato'
+      dep = 'object'
       wrapper = subject.new { dep }
       expect(wrapper.__getobj__).to be dep
     end
 
     it 'arg takes priority' do
-      dep = 'potato'
+      dep = 'object'
       priority_dep = 'chimichanga'
       wrapper = subject.new(priority_dep) { dep }
       expect(wrapper.__getobj__).to be priority_dep
     end
 
     it 'executes the block once' do
-      dep = 'potato'
+      dep = 'object'
       proc = proc { dep }
       wrapper = subject.new(&proc)
       expect(proc).to receive(:call).once
@@ -83,7 +83,7 @@ RSpec.describe LazyProxy do
   end
 
   describe '#__getobj__' do
-    let(:dep) { 'potato' }
+    let(:dep) { 'object' }
     subject { LazyProxy.new(dep) }
 
     it 'allows to get a dependency' do
@@ -100,25 +100,25 @@ RSpec.describe LazyProxy do
       subject { LazyProxy.new }
 
       it 'allows to set a dependency' do
-        dep = 'potato'
+        dep = 'object'
         subject.__setobj__(dep)
         expect(subject.__getobj__).to be dep
       end
 
       it 'allows to set a dependency' do
-        dep = 'potato'
+        dep = 'object'
         subject.__setobj__(dep)
         expect(subject.__getobj__).to be dep
       end
 
       it 'allows to set a dependency as a block' do
-        dep = 'potato'
+        dep = 'object'
         subject.__setobj__ { dep }
         expect(subject.__getobj__).to be dep
       end
 
       it 'executes the block once' do
-        dep = 'potato'
+        dep = 'object'
         proc = proc { dep }
         subject.__setobj__(&proc)
         expect(proc).to receive(:call).once
@@ -127,7 +127,7 @@ RSpec.describe LazyProxy do
       end
 
       it 'arg takes priority' do
-        dep = 'potato'
+        dep = 'object'
         priority_dep = 'chimichanga'
         subject.__setobj__(priority_dep) { dep }
         expect(subject.__getobj__).to be priority_dep
@@ -143,19 +143,19 @@ RSpec.describe LazyProxy do
       subject { LazyProxy.new('chimichanga') }
 
       it 'allows to set a dependency' do
-        dep = 'potato'
+        dep = 'object'
         subject.__setobj__(dep)
         expect(subject.__getobj__).to be dep
       end
 
       it 'allows to set a dependency as a block' do
-        dep = 'potato'
+        dep = 'object'
         subject.__setobj__ { dep }
         expect(subject.__getobj__).to be dep
       end
 
       it 'executes the block once' do
-        dep = 'potato'
+        dep = 'object'
         proc = proc { dep }
         subject.__setobj__(&proc)
         expect(proc).to receive(:call).once
@@ -164,7 +164,7 @@ RSpec.describe LazyProxy do
       end
 
       it 'arg takes priority' do
-        dep = 'potato'
+        dep = 'object'
         priority_dep = 'chimichanga'
         subject.__setobj__(priority_dep) { dep }
         expect(subject.__getobj__).to be priority_dep
@@ -177,22 +177,22 @@ RSpec.describe LazyProxy do
     end
 
     context 'dependency previously set as a block' do
-      subject { LazyProxy.new('chimichanga') { 'potato' } }
+      subject { LazyProxy.new('chimichanga') { 'object' } }
 
       it 'allows to set a dependency' do
-        dep = 'potato'
+        dep = 'object'
         subject.__setobj__(dep)
         expect(subject.__getobj__).to be dep
       end
 
       it 'allows to set a dependency as a block' do
-        dep = 'potato'
+        dep = 'object'
         subject.__setobj__ { dep }
         expect(subject.__getobj__).to be dep
       end
 
       it 'executes the block once' do
-        dep = 'potato'
+        dep = 'object'
         proc = proc { dep }
         subject.__setobj__(&proc)
         expect(proc).to receive(:call).once
@@ -201,7 +201,7 @@ RSpec.describe LazyProxy do
       end
 
       it 'arg takes priority' do
-        dep = 'potato'
+        dep = 'object'
         priority_dep = 'chimichanga'
         subject.__setobj__(priority_dep) { dep }
         expect(subject.__getobj__).to be priority_dep
@@ -327,6 +327,24 @@ RSpec.describe LazyProxy do
     it 'dups and copies over the content' do
       proxy = LazyProxy.new { :object }
       expect(proxy.dup.to_s).to eq 'object'
+    end
+  end
+
+  describe '#reset' do
+    it 'unmemoizes the resolved value from the block' do
+      dep = 'object'
+      block = proc { dep }
+      proxy = LazyProxy.new(&block)
+      expect(block).to receive(:call).twice
+      proxy.__getobj__
+      proxy.__reset__
+      proxy.__getobj__
+    end
+
+    it 'fails if it is not initialized with a block' do
+      dep = 'object'
+      proxy = LazyProxy.new(dep)
+      expect { proxy.__reset__ }.to raise_error(ArgumentError)
     end
   end
 end

@@ -16,7 +16,9 @@ static VALUE rb_cLazyProxy;
 
 struct wrapped_object {
   VALUE obj;
+  VALUE blk;
   unsigned char isblk;
+  unsigned char resolved;
 };
 
 static void wrapped_object_mark(void *p);
@@ -34,8 +36,9 @@ static const rb_data_type_t wrapped_object_data_type = {
 
 static struct wrapped_object* lp_ptr(VALUE obj);
 static void lp_cpy(struct wrapped_object * dst, struct wrapped_object * src);
-static void lp_set(VALUE self, VALUE obj, unsigned char isblk);
+static void lp_set(VALUE self, VALUE obj, VALUE blk, unsigned char isblk);
 static void lp_resolve(struct wrapped_object * ptr);
+static unsigned char lp_is_unresolved_blk(struct wrapped_object *ptr);
 
 static VALUE lp_alloc(VALUE klass);
 static VALUE lp_get_resolv(VALUE self);
