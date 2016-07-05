@@ -13,9 +13,7 @@ static size_t wrapped_object_memsize(const void *p) {
 static VALUE lp_alloc(VALUE klass) {
   struct wrapped_object *ptr;
 
-  VALUE proxy_obj = TypedData_Make_Struct(klass, struct wrapped_object, &wrapped_object_data_type, ptr);
-  ptr->obj = Qundef;
-  return proxy_obj;
+  return TypedData_Make_Struct(klass, struct wrapped_object, &wrapped_object_data_type, ptr);
 }
 
 static struct wrapped_object * lp_ptr(VALUE obj) {
@@ -37,7 +35,7 @@ static void lp_set(VALUE self, VALUE obj, VALUE blk, unsigned char isblk) {
 }
 
 static void lp_resolve(struct wrapped_object * ptr) {
-  VALUE blk = ptr->blk, resolved = rb_funcall(blk, rb_intern("call"), 0);
+  VALUE blk = ptr->blk, resolved = rb_funcall(blk, id_call, 0);
   struct wrapped_object data = {resolved, blk, 1, 1};
 
   lp_cpy(ptr, &data);
@@ -54,14 +52,13 @@ static VALUE lp_get_resolv(VALUE self) {
 
 static VALUE lp_initialize(int argc, VALUE* argv, VALUE self) {
   VALUE arg, blk;
-  rb_scan_args(argc, argv, "01&", &arg, &blk);
 
-  if (!NIL_P(arg))
-    lp_set(self, arg, Qundef, 0);
-  else if (!NIL_P(blk))
-    lp_set(self, Qnil, blk, 1);
-  else
-    lp_set(self, Qnil, Qundef, 0);
+  rb_check_arity(argc, 0, 1);
+
+  arg = (argc == 1) ? *argv : Qnil;
+  blk = rb_block_given_p() ? rb_block_proc() : Qnil;
+
+  lp_set(self, arg, blk, NIL_P(arg) && !NIL_P(blk));
 
   return self;
 }
@@ -69,24 +66,23 @@ static VALUE lp_initialize(int argc, VALUE* argv, VALUE self) {
 static VALUE lp_reset(VALUE self) {
   struct wrapped_object * ptr = lp_ptr(self);
 
-  if (!ptr->isblk)
+  if(!ptr->isblk)
     rb_raise(rb_eArgError, "proxy was not provided with a block");
 
-  lp_set(self, Qnil, ptr->blk, 1);
+  ptr->resolved = 0;
 
   return Qtrue;
 }
 
 static unsigned char lp_is_unresolved_blk(struct wrapped_object *ptr) {
-  return ptr && ptr->isblk && !ptr->resolved;
+  return ptr && !ptr->resolved;
 };
 
 static VALUE lp_inspect(VALUE self) {
   VALUE str, cname = rb_obj_class(self);
   struct wrapped_object * ptr = lp_ptr(self);
-  unsigned char is_unresolved_blk = lp_is_unresolved_blk(ptr);
 
-  if (is_unresolved_blk)
+  if (lp_is_unresolved_blk(ptr))
     str = rb_sprintf("#<%"PRIsVALUE": %+"PRIsVALUE" (unresolved)>", rb_class_path(cname), ptr->blk);
   else
     str = rb_sprintf("#<%"PRIsVALUE": %+"PRIsVALUE">", rb_class_path(cname), ptr->obj);
@@ -94,10 +90,27 @@ static VALUE lp_inspect(VALUE self) {
   return str;
 }
 
+static VALUE lp_send(int argc, VALUE* argv, VALUE self) {
+  VALUE obj;
+  ID method_id;
+  rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+
+  obj = lp_get_resolv(self);
+  method_id = rb_to_id(*argv);
+
+  return rb_funcall2(obj, method_id, --argc, ++argv);
+}
+
 static VALUE lp_method_missing(int argc, VALUE* argv, VALUE self) {
   VALUE method_name = *argv, obj = lp_get_resolv(self);
 
-  return rb_funcall2(obj, SYM2ID(method_name), --argc, ++argv);
+  return rb_funcallv_public(obj, SYM2ID(method_name), --argc, ++argv);
+}
+
+static VALUE lp_respond_to_missing(int argc, VALUE* argv, VALUE self) {
+  VALUE obj = lp_get_resolv(self);
+
+  return rb_funcall2(obj, id_respond_to, argc, argv);
 }
 
 static VALUE lp_init_copy(VALUE dst, VALUE src) {
@@ -114,6 +127,9 @@ static VALUE lp_init_copy(VALUE dst, VALUE src) {
 }
 
 void Init_lazy_proxy() {
+  id_call = rb_intern("call");
+  id_respond_to = rb_intern("respond_to?");
+
   rb_cLazyProxy = rb_define_class("LazyProxy", rb_cObject);
 
   rb_define_alloc_func(rb_cLazyProxy, lp_alloc);
@@ -125,6 +141,8 @@ void Init_lazy_proxy() {
   rb_define_method(rb_cLazyProxy, "__reset__", lp_reset, 0);
   rb_define_method(rb_cLazyProxy, "inspect", lp_inspect, 0);
   rb_define_method(rb_cLazyProxy, "method_missing", lp_method_missing, -1);
+  rb_define_method(rb_cLazyProxy, "send", lp_send, -1);
+  rb_define_method(rb_cLazyProxy, "respond_to_missing?", lp_respond_to_missing, -1);
 
   ATTACH_FORW_FUNC("enum_for", enum_for);
   ATTACH_FORW_FUNC("to_enum", to_enum);

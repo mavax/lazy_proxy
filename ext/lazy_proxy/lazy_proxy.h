@@ -11,6 +11,8 @@ static VALUE lp_##sanitized_name(int argc, VALUE* argv, VALUE self) { \
 #define ATTACH_FORW_FUNC(method_name, sanitized_name) \
 rb_define_method(rb_cLazyProxy, method_name, lp_##sanitized_name, -1);
 
+static ID id_call;
+static ID id_respond_to;
 
 static VALUE rb_cLazyProxy;
 
@@ -45,6 +47,7 @@ static VALUE lp_get_resolv(VALUE self);
 static VALUE lp_initialize(int argc, VALUE* argv, VALUE self);
 static VALUE lp_inspect(VALUE self);
 static VALUE lp_method_missing(int argc, VALUE* argv, VALUE self);
+static VALUE lp_respond_to_missing(int argc, VALUE* argv, VALUE self);
 static VALUE lp_init_copy(VALUE dst, VALUE src);
 
 DECLARE_FORW_FUNC(enum_for);

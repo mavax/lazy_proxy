@@ -1,0 +1,6 @@
+Documentation:
+  Enabled: false
+Style/CaseEquality:
+  Enabled: false
+Performance/StartWith:
+  Enabled: false

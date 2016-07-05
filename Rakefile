@@ -26,9 +26,21 @@ task :memory_leak_check do
   top_level_threads.each(&:join)
 end
 
+task :benchmark do
+  require 'lazy_proxy'
+  require 'benchmark'
+
+  benchmark = Benchmark.measure do
+    1000000.times do
+      LazyProxy.new(:object)
+    end
+  end.real
+  puts benchmark
+end
+
 desc 'Run all specs'
-RSpec::Core::RakeTask.new('test') do |spec|
-  spec.rspec_opts = %w{}
+RSpec::Core::RakeTask.new('test') do |s|
+  s.rspec_opts = %w()
 end
 
 Rake::ExtensionTask.new('lazy_proxy', spec) do |ext|

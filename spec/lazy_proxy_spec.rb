@@ -25,28 +25,6 @@ RSpec.describe LazyProxy do
     end
   end
 
-  describe 'multithreading' do
-    let(:aux_class) do
-      Class.new {}
-    end
-
-    let(:wrapper) { subject.new(aux_class.new) }
-
-    it 'does not create glitches' do
-      wrapper = wrapper()
-      threads = []
-      10.times do
-        threads << Thread.new do
-          100.times do
-            wrapper.__setobj__(aux_class.new)
-            expect(wrapper.__getobj__).to be_a aux_class
-          end
-        end
-      end
-      threads.each(&:join)
-    end
-  end
-
   describe '.new' do
     it 'allows to set a dependency' do
       dep = 'object'
@@ -215,14 +193,95 @@ RSpec.describe LazyProxy do
   end
 
   describe '#method_missing' do
+    let(:aux_class) do
+      Class.new do
+        def pub
+          :pub
+        end
+
+        private
+
+        def priv
+          :priv
+        end
+      end
+    end
+
     it 'works' do
-      proxy = LazyProxy.new('object')
-      expect(proxy.upcase).to eq 'OBJECT'
+      proxy = LazyProxy.new(aux_class.new)
+      expect(proxy.pub).to eq :pub
     end
 
     it 'works with blocks' do
-      proxy = LazyProxy.new { 'object' }
-      expect(proxy.upcase).to eq 'OBJECT'
+      proxy = LazyProxy.new { aux_class.new }
+      expect(proxy.pub).to eq :pub
+    end
+
+    it 'fails for private methods' do
+      proxy = LazyProxy.new(aux_class.new)
+      expect { proxy.priv }.to raise_error NoMethodError
+    end
+  end
+
+  describe '#send' do
+    let(:aux_class) do
+      Class.new do
+        def pub(*args)
+          args
+        end
+
+        private
+
+        def priv(*args)
+          args
+        end
+      end
+    end
+
+    it 'works' do
+      proxy = LazyProxy.new(aux_class.new)
+      expect(proxy.send(:pub, :a)).to eq [:a]
+    end
+
+    it 'works with blocks' do
+      proxy = LazyProxy.new { aux_class.new }
+      expect(proxy.send(:pub, :a)).to eq [:a]
+    end
+
+    it 'works for private methods' do
+      proxy = LazyProxy.new(aux_class.new)
+      expect(proxy.send(:priv, :a)).to eq [:a]
+    end
+  end
+
+  describe '#public_send' do
+    let(:aux_class) do
+      Class.new do
+        def pub(*args)
+          args
+        end
+
+        private
+
+        def priv(*args)
+          args
+        end
+      end
+    end
+
+    it 'works' do
+      proxy = LazyProxy.new(aux_class.new)
+      expect(proxy.public_send(:pub, :a)).to eq [:a]
+    end
+
+    it 'works with blocks' do
+      proxy = LazyProxy.new { aux_class.new }
+      expect(proxy.public_send(:pub, :a)).to eq [:a]
+    end
+
+    it 'works for private methods' do
+      proxy = LazyProxy.new(aux_class.new)
+      expect { proxy.public_send(:priv, :a) }.to raise_error NoMethodError
     end
   end
 
@@ -241,7 +300,8 @@ RSpec.describe LazyProxy do
 
       it 'returns a formatted representation' do
         proxy = LazyProxy.new(&block)
-        expect(proxy.inspect).to eq "#<LazyProxy: #{block.inspect} (unresolved)>"
+        expect(proxy.inspect)
+          .to eq "#<LazyProxy: #{block.inspect} (unresolved)>"
       end
 
       it 'representation containing the resolved value once resolved' do
@@ -255,7 +315,8 @@ RSpec.describe LazyProxy do
   describe '#enum_for' do
     it 'forwards to the wrapped object' do
       proxy = LazyProxy.new { 'object' }
-      expect(proxy.enum_for(:each_byte).to_a).to eq([111, 98, 106, 101, 99, 116])
+      expect(proxy.enum_for(:each_byte).to_a)
+        .to eq([111, 98, 106, 101, 99, 116])
     end
   end
 
@@ -308,7 +369,7 @@ RSpec.describe LazyProxy do
 
   describe '#=~' do
     it 'forwards to the wrapped object' do
-      proxy = LazyProxy.new { "object" }
+      proxy = LazyProxy.new { 'object' }
       expect(proxy =~ /bje/).to eq 1
       expect(proxy =~ /\Abje/).to be_nil
     end
@@ -345,6 +406,72 @@ RSpec.describe LazyProxy do
       dep = 'object'
       proxy = LazyProxy.new(dep)
       expect { proxy.__reset__ }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe '#respond_to?' do
+    let(:aux_class) do
+      Class.new do
+        def pub
+          :pub
+        end
+
+        private
+
+        def priv
+          :priv
+        end
+      end
+    end
+
+    context 'argument' do
+      context 'include private = false' do
+        it 'returns true when wrapped obj responds to the public method' do
+          expect(LazyProxy.new(aux_class.new).respond_to?(:pub)).to be true
+        end
+
+        it 'returns false when wrapped obj responds to the private method' do
+          expect(LazyProxy.new(aux_class.new).respond_to?(:priv)).to be false
+        end
+      end
+
+      context 'include private = true' do
+        it 'returns true when wrapped obj responds to the public method' do
+          expect(LazyProxy.new(aux_class.new).respond_to?(:pub, true))
+            .to be true
+        end
+
+        it 'returns true when wrapped obj responds to the private method' do
+          expect(LazyProxy.new(aux_class.new).respond_to?(:priv, true))
+            .to be true
+        end
+      end
+    end
+
+    context 'block' do
+      context 'include private = false' do
+        it 'returns true when wrapped obj responds to the public method' do
+          expect((LazyProxy.new { aux_class.new }).respond_to?(:pub))
+            .to be true
+        end
+
+        it 'returns false when wrapped obj responds to the private method' do
+          expect((LazyProxy.new { aux_class.new }).respond_to?(:priv))
+            .to be false
+        end
+      end
+
+      context 'include private = true' do
+        it 'returns true when wrapped obj responds to the public method' do
+          expect((LazyProxy.new { aux_class.new }).respond_to?(:pub, true))
+            .to be true
+        end
+
+        it 'returns true when wrapped obj responds to the private method' do
+          expect((LazyProxy.new { aux_class.new }).respond_to?(:priv, true))
+            .to be true
+        end
+      end
     end
   end
 end
