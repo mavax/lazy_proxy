@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.files         = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features)/})
   end
-  s.require_paths = ['lib', 'ext']
+  s.require_paths = %w(lib ext)
 
   s.extensions << 'ext/lazy_proxy/extconf.rb'
   s.add_development_dependency 'rake-compiler'

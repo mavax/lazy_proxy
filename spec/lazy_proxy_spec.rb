@@ -240,8 +240,8 @@ RSpec.describe LazyProxy do
       let(:block) { proc { :object } }
 
       it 'returns a formatted representation' do
-        proxy = LazyProxy.new(&block)
-        expect(proxy.inspect).to eq "#<LazyProxy: #{block.inspect} (unresolved)>"
+        prx = LazyProxy.new(&block)
+        expect(prx.inspect).to eq "#<LazyProxy: #{block.inspect} (unresolved)>"
       end
 
       it 'representation containing the resolved value once resolved' do
@@ -254,8 +254,8 @@ RSpec.describe LazyProxy do
 
   describe '#enum_for' do
     it 'forwards to the wrapped object' do
-      proxy = LazyProxy.new { 'object' }
-      expect(proxy.enum_for(:each_byte).to_a).to eq([111, 98, 106, 101, 99, 116])
+      prx = LazyProxy.new { 'object' }
+      expect(prx.enum_for(:each_byte).to_a).to eq([111, 98, 106, 101, 99, 116])
     end
   end
 
@@ -299,6 +299,7 @@ RSpec.describe LazyProxy do
   end
 
   describe '#===' do
+    # rubocop:disable Style/CaseEquality
     it 'forwards to the wrapped object' do
       proxy = LazyProxy.new { 1..3 }
       expect(proxy === 2).to be true
@@ -308,9 +309,9 @@ RSpec.describe LazyProxy do
 
   describe '#=~' do
     it 'forwards to the wrapped object' do
-      proxy = LazyProxy.new { "object" }
+      proxy = LazyProxy.new { 'object' }
       expect(proxy =~ /bje/).to eq 1
-      expect(proxy =~ /\Abje/).to be_nil
+      expect(proxy =~ /aje/).to be_nil
     end
   end
 
