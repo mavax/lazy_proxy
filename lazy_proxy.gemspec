@@ -20,5 +20,5 @@ Gem::Specification.new do |s|
   s.extensions << 'ext/lazy_proxy/extconf.rb'
   s.add_development_dependency 'rake-compiler'
   s.add_development_dependency 'rake'
-  s.required_ruby_version = '>= 2.0.0'
+  s.required_ruby_version = '>= 2.1.0'
 end
