@@ -134,15 +134,16 @@ void Init_lazy_proxy() {
 
   rb_define_alloc_func(rb_cLazyProxy, lp_alloc);
 
-  rb_define_private_method(rb_cLazyProxy, "initialize", lp_initialize, -1);
-  rb_define_private_method(rb_cLazyProxy, "initialize_copy", lp_init_copy, 1);
   rb_define_method(rb_cLazyProxy, "__setobj__", lp_initialize, -1);
   rb_define_method(rb_cLazyProxy, "__getobj__", lp_get_resolv, 0);
   rb_define_method(rb_cLazyProxy, "__reset__", lp_reset, 0);
-  rb_define_method(rb_cLazyProxy, "inspect", lp_inspect, 0);
-  rb_define_method(rb_cLazyProxy, "method_missing", lp_method_missing, -1);
   rb_define_method(rb_cLazyProxy, "send", lp_send, -1);
-  rb_define_method(rb_cLazyProxy, "respond_to_missing?", lp_respond_to_missing, -1);
+  rb_define_method(rb_cLazyProxy, "inspect", lp_inspect, 0);
+
+  rb_define_private_method(rb_cLazyProxy, "initialize", lp_initialize, -1);
+  rb_define_private_method(rb_cLazyProxy, "initialize_copy", lp_init_copy, 1);
+  rb_define_private_method(rb_cLazyProxy, "method_missing", lp_method_missing, -1);
+  rb_define_private_method(rb_cLazyProxy, "respond_to_missing?", lp_respond_to_missing, -1);
 
   ATTACH_FORW_FUNC("enum_for", enum_for);
   ATTACH_FORW_FUNC("to_enum", to_enum);

@@ -49,6 +49,7 @@ static VALUE lp_inspect(VALUE self);
 static VALUE lp_method_missing(int argc, VALUE* argv, VALUE self);
 static VALUE lp_respond_to_missing(int argc, VALUE* argv, VALUE self);
 static VALUE lp_init_copy(VALUE dst, VALUE src);
+static VALUE lp_send(int argc, VALUE* argv, VALUE self);
 
 DECLARE_FORW_FUNC(enum_for);
 DECLARE_FORW_FUNC(to_enum);
