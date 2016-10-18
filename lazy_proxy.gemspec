@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |s|
   s.name          = 'lazy_proxy'
-  s.version       = '0.0.2'
+  s.version       = '0.0.3'
   s.authors       = ['Manuel A. Valenzuela']
   s.email         = ['manvalaco@gmail.com']
 
